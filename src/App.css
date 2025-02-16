@@ -1,0 +1,153 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rbc-event {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 8px; /* Закругление */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Лёгкая тень */
+}
+
+.rbc-event-label {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Центрирует время по горизонтали */
+  text-align: center;
+  width: 100%;
+}
+
+
+/* 📌 Исправление для мобильных устройств */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .header h1 {
+    font-size: 24px;
+  }
+
+  .header button {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .rbc-calendar {
+    height: 65vh !important;
+    width: 100% !important;
+    overflow-x: auto;
+  }
+
+  .rbc-event {
+    font-size: 12px;
+    padding: 2px;
+    border-radius: 12px !important; /* Полное скругление */
+  }
+
+  /* Убираем кнопку "Неделя" */
+  .rbc-toolbar button[data-view="week"] {
+    display: none;
+  }
+}
+
+/* 📌 Специальные настройки для iPhone 14 Pro Max (430px x 932px) */
+@media (max-width: 430px) {
+  .rbc-btn-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .rbc-btn-group button {
+    flex: 1;
+    max-width: 48%;
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .rbc-toolbar button.today-btn {
+    max-width: 270px;
+  }
+}
+
+/* 📌 Для iPhone 12, 13, 14 (375px) */
+@media (max-width: 375px) {
+  .rbc-btn-group {
+    gap: 6px;
+  }
+
+  .rbc-btn-group button {
+    min-width: 48%;
+    font-size: 13px;
+    padding: 9px 10px;
+  }
+
+  .rbc-toolbar button.today-btn {
+    max-width: 260px;
+  }
+}
+
+/* 📌 Для очень узких экранов (360px) */
+@media (max-width: 360px) {
+  .rbc-btn-group {
+    gap: 4px;
+  }
+
+  .rbc-btn-group button {
+    min-width: 49%;
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .rbc-toolbar button.today-btn {
+    max-width: 250px;
+  }
+}

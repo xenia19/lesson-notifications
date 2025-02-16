@@ -1,0 +1,29 @@
+name: Admin Notification on New Booking
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # запуск каждые 15 минут (можно настроить по необходимости)
+  workflow_dispatch:
+
+jobs:
+  notify_admin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run admin_notify script
+        env:
+          MG_DOMAIN: ${{ secrets.MG_DOMAIN }}
+          MG_API_KEY: ${{ secrets.MG_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node admin_notify.js

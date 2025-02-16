@@ -1,0 +1,21 @@
+[debug] [2025-02-15T11:15:54.110Z] ----------------------------------------------------------------------
+[debug] [2025-02-15T11:15:54.112Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\xenia\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init
+[debug] [2025-02-15T11:15:54.112Z] CLI Version:   13.31.0
+[debug] [2025-02-15T11:15:54.113Z] Platform:      win32
+[debug] [2025-02-15T11:15:54.113Z] Node Version:  v22.11.0
+[debug] [2025-02-15T11:15:54.113Z] Time:          Sat Feb 15 2025 08:15:54 GMT-0300 (Бразилия, стандартное время)
+[debug] [2025-02-15T11:15:54.113Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-15T11:15:54.119Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-15T11:15:54.119Z] > authorizing via signed-in user (ksiusha.maestra@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\xenia\Documents\booking-calendar
+

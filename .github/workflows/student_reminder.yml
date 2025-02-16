@@ -1,0 +1,28 @@
+name: Student Reminder Notification
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # запуск каждые 15 минут (настройте по необходимости)
+  workflow_dispatch:
+
+jobs:
+  notify_student:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run student_reminder script
+        env:
+          MG_DOMAIN: ${{ secrets.MG_DOMAIN }}
+          MG_API_KEY: ${{ secrets.MG_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node student_reminder.js

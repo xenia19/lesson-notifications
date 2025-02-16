@@ -1,0 +1,31 @@
+.modal {
+    position: fixed;
+    background-color: #ffffff;
+    padding: 15px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    width: 250px;
+    left: 50%;
+    top: 20%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .modal-text {
+    font-size: 16px;
+    color: #424242;
+    margin: 5px 0;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
