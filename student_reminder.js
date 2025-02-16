@@ -41,13 +41,13 @@ async function sendStudentReminders() {
     snapshot.forEach(doc => {
       const lesson = doc.data();
       let subject = 'Напоминание: Ваш урок скоро начнется';
-      let text = `Привет, ${lesson.userName}!\n\nВаш урок начнется в ${lesson.start}.\n\nСтатус оплаты: ${lesson.paid ? 'Оплачен' : 'Не оплачен'}.`;
-      let html = `<p>Привет, ${lesson.userName}!</p>
+      let text = `Hola, ${lesson.userName}!\n\nВаш урок начнется в ${lesson.start}.\n\nСтатус оплаты: ${lesson.paid ? 'Оплачен' : 'Не оплачен'}.`;
+      let html = `<p>Hola ${lesson.userName}!</p>
                   <p>Напоминаем, что ваш урок начнется в <strong>${lesson.start}</strong>.</p>
                   <p>Статус оплаты: <strong>${lesson.paid ? 'Оплачен' : 'Не оплачен'}</strong>.</p>`;
 
       const data = {
-        from: 'noreply@clases-con-xenia.online',
+        from: 'info@clases-con-xenia.online',
         to: lesson.userEmail,
         subject: subject,
         text: text,
