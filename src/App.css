@@ -58,8 +58,7 @@
   width: 100%;
 }
 
-
-/* 📌 Исправление для мобильных устройств */
+/* 📌 Улучшенный стиль для мобильных устройств */
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
@@ -93,6 +92,34 @@
     border-radius: 12px !important; /* Полное скругление */
   }
 
+  /* ✅ Новые стили для удобства навигации */
+  .rbc-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px; /* Больше пространства между кнопками */
+  }
+
+  .rbc-toolbar .rbc-btn-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px; /* Увеличенное расстояние между кнопками */
+    width: 100%;
+  }
+
+  .rbc-toolbar button {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .rbc-toolbar-label {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px; /* Добавлен отступ */
+  }
+
   /* Убираем кнопку "Неделя" */
   .rbc-toolbar button[data-view="week"] {
     display: none;
@@ -101,53 +128,40 @@
 
 /* 📌 Специальные настройки для iPhone 14 Pro Max (430px x 932px) */
 @media (max-width: 430px) {
-  .rbc-btn-group {
-    width: 100%;
-    justify-content: space-between;
+  .rbc-toolbar .rbc-btn-group {
+    gap: 14px; /* Еще больше пространства между кнопками */
   }
 
-  .rbc-btn-group button {
-    flex: 1;
-    max-width: 48%;
-    font-size: 14px;
-    padding: 10px;
+  .rbc-toolbar button {
+    font-size: 13px;
+    padding: 12px; /* Делаем кнопки удобнее для кликов */
   }
 
-  .rbc-toolbar button.today-btn {
-    max-width: 270px;
+  .rbc-toolbar-label {
+    font-size: 17px;
   }
 }
 
 /* 📌 Для iPhone 12, 13, 14 (375px) */
 @media (max-width: 375px) {
-  .rbc-btn-group {
-    gap: 6px;
+  .rbc-toolbar .rbc-btn-group {
+    gap: 16px; /* Максимально удобное расстояние для узких экранов */
   }
 
-  .rbc-btn-group button {
-    min-width: 48%;
-    font-size: 13px;
-    padding: 9px 10px;
-  }
-
-  .rbc-toolbar button.today-btn {
-    max-width: 260px;
+  .rbc-toolbar button {
+    font-size: 12px;
+    padding: 10px;
   }
 }
 
 /* 📌 Для очень узких экранов (360px) */
 @media (max-width: 360px) {
-  .rbc-btn-group {
-    gap: 4px;
+  .rbc-toolbar .rbc-btn-group {
+    gap: 15px;
   }
 
-  .rbc-btn-group button {
-    min-width: 49%;
+  .rbc-toolbar button {
     font-size: 12px;
-    padding: 8px;
-  }
-
-  .rbc-toolbar button.today-btn {
-    max-width: 250px;
+    padding: 9px;
   }
 }

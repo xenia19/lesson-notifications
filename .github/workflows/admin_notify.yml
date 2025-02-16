@@ -2,7 +2,7 @@ name: Admin Notification on New Booking
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # запуск каждые 15 минут (можно настроить по необходимости)
+    - cron: '*/5 * * * *'  # запуск каждые 5 минут (при необходимости можно изменить на '*/15 * * * *' для каждых 15 минут)
   workflow_dispatch:
 
 jobs:
@@ -22,8 +22,7 @@ jobs:
 
       - name: Run admin_notify script
         env:
-          MG_DOMAIN: ${{ secrets.MG_DOMAIN }}
-          MG_API_KEY: ${{ secrets.MG_API_KEY }}
+          SIB_API_KEY: ${{ secrets.SIB_API_KEY }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node admin_notify.js

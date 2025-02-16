@@ -33,6 +33,19 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
+// Кастомный компонент для отрисовки ячеек времени
+function CustomTimeSlotWrapper({ value, children }) {
+  // Определяем час для временного слота в часовом поясе Сан-Паулу
+  const hour = moment.tz(value, 'America/Sao_Paulo').hour();
+  const isDisabled = hour < 7 || hour >= 22;
+  const style = isDisabled
+    ? { backgroundColor: '#f0f0f0', pointerEvents: 'none' }
+    : {};
+  return React.cloneElement(children, {
+    style: { ...children.props.style, ...style },
+  });
+}
+
 function BookingCalendar() {
   const [events, setEvents] = useState([]);
   const [selectedSlots, setSelectedSlots] = useState([]);
@@ -150,6 +163,7 @@ function BookingCalendar() {
           userEmail: user.email,
           userName: user.displayName || user.email,
           paid: false,
+          adminNotified: false
         });
       }
       alert('Уроки успешно забронированы!');
@@ -181,9 +195,7 @@ function BookingCalendar() {
       return (
         <div style={{ textAlign: "center", lineHeight: 1.2 }}>
           <div style={{ fontWeight: "bold" }}>{event.title}</div>
-          <div style={{ fontSize: "10px", marginTop: "4px" }}>
-            {event.paid ? "Оплачено" : "Ожидает оплаты"}
-          </div>
+   
         </div>
       );
     }
@@ -192,7 +204,7 @@ function BookingCalendar() {
 
   const selectedSlotEvents = selectedSlots.map((slot, idx) => ({
     id: `temp-${idx}`,
-    title: 'Выбранное время',
+    title: '',
     start: slot.start,
     end: new Date(slot.start.getTime() + lessonDuration * 60000),
     temp: true,
@@ -236,7 +248,11 @@ function BookingCalendar() {
                 Привет, {user.displayName || user.email}
               </span>
               <button
-                onClick={async () => { await signOut(auth); setUser(null); alert('Вы вышли из системы.'); }}
+                onClick={async () => { 
+                  await signOut(auth); 
+                  setUser(null); 
+                  alert('Вы вышли из системы.'); 
+                }}
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#e74c3c',
@@ -434,7 +450,7 @@ function BookingCalendar() {
                 }}
               >
                 <img 
-                    src={googleLogo} 
+                  src={googleLogo} 
                   alt="Google logo" 
                   style={{ width: '24px', height: '24px' }} 
                 />
@@ -585,10 +601,22 @@ function BookingCalendar() {
             }
           }}
           onSelectSlot={(slotInfo) => {
+            // Проверяем, находится ли выбранное время в интервале 7:00–22:00 по Сан-Паулу
+            const hour = moment.tz(slotInfo.start, 'America/Sao_Paulo').hour();
+            if (hour < 7 || hour >= 22) {
+              alert('В это время бронирование недоступно.');
+              return;
+            }
             if (user) {
-              const alreadySelected = selectedSlots.some(slot => slot.start.getTime() === slotInfo.start.getTime());
+              const alreadySelected = selectedSlots.some(
+                slot => slot.start.getTime() === slotInfo.start.getTime()
+              );
               if (alreadySelected) {
-                setSelectedSlots(prev => prev.filter(slot => slot.start.getTime() !== slotInfo.start.getTime()));
+                setSelectedSlots(prev =>
+                  prev.filter(
+                    slot => slot.start.getTime() !== slotInfo.start.getTime()
+                  )
+                );
               } else {
                 setSelectedSlots(prev => [...prev, slotInfo]);
               }
@@ -602,7 +630,7 @@ function BookingCalendar() {
           views={{ day: true, month: true, week: !isMobile }}
           firstDay={1}
           style={{
-            height: '70vh',
+            height: '100%',
             width: '100%',
             padding: '15px',
             backgroundColor: '#ffffff',
@@ -610,10 +638,11 @@ function BookingCalendar() {
             boxShadow: '0px 6px 15px rgba(0, 0, 0, 0.1)',
             marginBottom: '20px'
           }}
-          timeslots={1}
-          step={60}
-          min={moment.tz('2023-01-01 07:00:00', 'America/Sao_Paulo').toDate()}
-          max={moment.tz('2023-01-01 22:00:00', 'America/Sao_Paulo').toDate()}
+          step={30}  
+          timeslots={2}
+    
+
+          // Убираем min и max, чтобы показывать все 24 часа
           getNow={() => new Date()}
           culture="ru"
           messages={{
@@ -630,7 +659,10 @@ function BookingCalendar() {
             noEventsInRange: 'Нет событий в этом диапазоне.',
             showMore: (total) => `+ ещё ${total}`
           }}
-          components={{ event: MyEvent }}
+          components={{
+            event: MyEvent,
+            timeSlotWrapper: CustomTimeSlotWrapper, // Подключаем кастомный wrapper для слотов
+          }}
           eventPropGetter={(event) => {
             if (event.temp) {
               return {
@@ -648,7 +680,6 @@ function BookingCalendar() {
               };
             }
             if (event.userEmail === user?.email) {
-              // Если урок уже прошёл, применяем альтернативное оформление
               if (event.start < now) {
                 return {
                   style: {
@@ -721,7 +752,7 @@ function BookingCalendar() {
                 textAlign: 'center'
               }}
             >
-              <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>Баланс уроков (только будущие, оплаченные)</h3>
+              <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>Баланс уроков</h3>
               <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '16px' }}>
                 <div>
                   <div style={{ fontWeight: 'bold', color: '#2ecc71' }}>{paidLessons}</div>
