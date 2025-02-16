@@ -14,13 +14,12 @@ const MG_DOMAIN = process.env.MG_DOMAIN; // например, "mg.clases-con-xen
 const MG_API_KEY = process.env.MG_API_KEY; // ваш Mailgun API-ключ
 const mg = mailgun({ apiKey: MG_API_KEY, domain: MG_DOMAIN });
 
-// Email администратора
+// Email администратора (куда будут приходить уведомления)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL; // например, "admin@clases-con-xenia.online"
 
 async function notifyAdminOnNewBooking() {
   try {
-    // Выбираем уроки, по которым уведомление ещё не отправлено
-    // Предполагается, что при бронировании в документе не задано поле adminNotified или оно равно false
+    // Запрос к коллекции 'lessons': выбираем документы, где поле adminNotified равно false
     const snapshot = await db.collection('lessons')
       .where('adminNotified', '==', false)
       .get();
@@ -38,7 +37,7 @@ async function notifyAdminOnNewBooking() {
       const text = `Пользователь ${lesson.userName} (${lesson.userEmail}) забронировал урок, начинающийся в ${lesson.start}.`;
 
       const data = {
-        from: 'noreply@clases-con-xenia.online', // адрес должен быть подтверждён в Mailgun
+        from: 'info@clases-con-xenia.online', // этот email должен быть подтверждён в Mailgun
         to: ADMIN_EMAIL,
         subject: subject,
         text: text,
@@ -46,9 +45,9 @@ async function notifyAdminOnNewBooking() {
 
       mg.messages().send(data, async (error, body) => {
         if (error) {
-          console.error(`Ошибка отправки уведомления для ${lesson.userEmail}:`, error);
+          console.error(`Ошибка отправки уведомления администратору для бронирования пользователя ${lesson.userName} (${lesson.userEmail}):`, error);
         } else {
-          console.log(`Уведомление отправлено для ${lesson.userEmail}:`, body);
+          console.log(`Уведомление администратору отправлено для бронирования пользователя ${lesson.userName} (${lesson.userEmail}):`, body);
           // Обновляем документ, чтобы повторное уведомление не отправлялось
           updatePromises.push(
             db.collection('lessons').doc(doc.id).update({ adminNotified: true })
@@ -57,7 +56,7 @@ async function notifyAdminOnNewBooking() {
       });
     });
 
-    // Дожидаемся обновления всех документов
+    // Ждем завершения всех обновлений документов
     await Promise.all(updatePromises);
     console.log('Все уведомления администратору обработаны');
   } catch (error) {
