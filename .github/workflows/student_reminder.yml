@@ -2,7 +2,7 @@ name: Student Reminder Notification
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # запуск каждые 15 минут (настройте по необходимости)
+    - cron: '*/5 * * * *'  # запуск каждые 5 минут (при необходимости измените на нужное расписание)
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,6 @@ jobs:
 
       - name: Run student_reminder script
         env:
-          MG_DOMAIN: ${{ secrets.MG_DOMAIN }}
-          MG_API_KEY: ${{ secrets.MG_API_KEY }}
+          SIB_API_KEY: ${{ secrets.SIB_API_KEY }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node student_reminder.js
