@@ -18,7 +18,7 @@ const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 // Email администратора (куда будут отправляться уведомления)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL; // например, "admin@clases-con-xenia.online"
-
+console.log('ADMIN_EMAIL:', ADMIN_EMAIL);
 async function notifyAdminOnNewBooking() {
   try {
     // Запрос: выбираем документы в коллекции 'lessons', где adminNotified == false
