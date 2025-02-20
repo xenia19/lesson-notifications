@@ -17,6 +17,15 @@ apiKey.apiKey = process.env.SIB_API_KEY;
 
 const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
+function getTimeZoneName(timeZone) {
+  const options = { timeZone, timeZoneName: 'long' };
+  const dateFormatter = new Intl.DateTimeFormat('ru-RU', options);
+  const parts = dateFormatter.formatToParts(new Date());
+  const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+  return timeZonePart ? timeZonePart.value : 'Неизвестная зона';
+}
+const timeZoneName = getTimeZoneName(userTimezone);
+
 async function sendStudentReminders() {
   const now = new Date();
   // Напоминание отправляется за 60 минут до начала урока
@@ -55,7 +64,7 @@ async function sendStudentReminders() {
       const subject = "Напоминание: Ваш урок скоро начнется";
       const status = lesson.paid ? "Оплачен" : "Не оплачен";
       const htmlContent = `<p>Hola <strong>${lesson.userName}</strong>!</p>
-                           <p>Напоминаем, что ваш урок начнется <strong>${lessonTimeLocal}</strong> (по вашему времени).</p>
+                           <p>Напоминаем, что ваш урок начнется <strong>${lessonTimeLocal}</strong> (время - ${timeZoneName}).</p>
                            <p>Статус оплаты: <strong>${status}</strong>.</p>`;
       
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
