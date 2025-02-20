@@ -36,7 +36,8 @@ async function notifyAdminOnNewBooking() {
     snapshot.forEach(doc => {
       const lesson = doc.data();
       const subject = 'Новый урок забронирован';
-      const htmlContent = `<p>Пользователь <strong>${lesson.userName}</strong> (${lesson.userEmail}) забронировал урок, начинающийся в <strong>${lesson.start}</strong>.</p>`;
+      const saoPauloTime = new Date(lesson.start).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      const htmlContent = `<p>Пользователь <strong>${lesson.userName}</strong> (${lesson.userEmail}) забронировал урок, начинающийся в <strong>${saoPauloTime}</strong>.</p>`;
       
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
       sendSmtpEmail.subject = subject;
