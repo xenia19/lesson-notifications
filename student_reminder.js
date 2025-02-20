@@ -38,12 +38,22 @@ async function sendStudentReminders() {
 
     const updatePromises = [];
 
-    snapshot.forEach(doc => {
+     snapshot.forEach(async (doc) => {
       const lesson = doc.data();
-      const subject = 'Напоминание: Ваш урок скоро начнется';
-      const status = lesson.paid ? 'Оплачен' : 'Не оплачен';
+      const userTimezone = lesson.userTimezone || "UTC"; // Если нет, используем UTC
+
+      // Конвертируем дату в русский формат в часовом поясе ученика
+      const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long" };
+      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit" };
+      const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
+      const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
+      const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
+
+      // Формируем email
+      const subject = "Напоминание: Ваш урок скоро начнется";
+      const status = lesson.paid ? "Оплачен" : "Не оплачен";
       const htmlContent = `<p>Hola <strong>${lesson.userName}</strong>!</p>
-                           <p>Напоминаем, что ваш урок начнется в <strong>${lesson.start}</strong>.</p>
+                           <p>Напоминаем, что ваш урок начнется <strong>${lessonTimeLocal}</strong> (по вашему времени).</p>
                            <p>Статус оплаты: <strong>${status}</strong>.</p>`;
       
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
