@@ -1,4 +1,3 @@
-// student_reminder.js
 const admin = require('firebase-admin');
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 
@@ -38,19 +37,20 @@ async function sendStudentReminders() {
 
     const updatePromises = [];
 
-   snapshot.forEach(async (doc) => {
-    const lesson = doc.data();
-    const userTimezone = lesson.userTimezone || "UTC"; // Если нет, используем UTC
+    // Заменяем forEach на for...of для корректной работы с async/await
+    for (const doc of snapshot.docs) {
+      const lesson = doc.data();
+      const userTimezone = lesson.userTimezone || "UTC"; // Если нет, используем UTC
 
-    // Конвертируем дату в русский формат в часовом поясе ученика
-    const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
-    const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false }; // часовой формат 24
-    const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
-    const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
-    const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
+      // Конвертируем дату в русский формат в часовом поясе ученика
+      const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
+      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false }; // часовой формат 24
+      const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
+      const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
+      const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
 
-    console.log(lessonTimeLocal, "user time zone",userTimezone ); // Это будет показывать правильное время в вашем формате
-});
+      console.log(lessonTimeLocal, "user time zone", userTimezone); // Это будет показывать правильное время в вашем формате
+
       // Формируем email
       const subject = "Напоминание: Ваш урок скоро начнется";
       const status = lesson.paid ? "Оплачен" : "Не оплачен";
@@ -64,13 +64,14 @@ async function sendStudentReminders() {
       sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Clases' };
       sendSmtpEmail.to = [{ email: lesson.userEmail, name: lesson.userName }];
 
-      tranEmailApi.sendTransacEmail(sendSmtpEmail).then((data) => {
+      try {
+        const data = await tranEmailApi.sendTransacEmail(sendSmtpEmail);
         console.log(`Напоминание отправлено для ${lesson.userEmail}:`, data);
         updatePromises.push(db.collection('lessons').doc(doc.id).update({ studentNotified: true }));
-      }).catch((error) => {
+      } catch (error) {
         console.error(`Ошибка отправки напоминания для ${lesson.userEmail}:`, error);
-      });
-    });
+      }
+    }
 
     await Promise.all(updatePromises);
     console.log('Все уведомления ученикам обработаны');
