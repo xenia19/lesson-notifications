@@ -29,7 +29,7 @@ const timeZoneName = getTimeZoneName(userTimezone);
 async function sendStudentReminders() {
   const now = new Date();
   // Напоминание отправляется за 60 минут до начала урока
-  const reminderTimeMs = 60 * 60 * 1000;
+  const reminderTimeMs = 30 * 60 * 1000;
   const reminderThreshold = new Date(now.getTime() + reminderTimeMs);
 
   try {
