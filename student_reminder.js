@@ -38,17 +38,19 @@ async function sendStudentReminders() {
 
     const updatePromises = [];
 
-     snapshot.forEach(async (doc) => {
-      const lesson = doc.data();
-      const userTimezone = lesson.userTimezone || "UTC"; // Если нет, используем UTC
+   snapshot.forEach(async (doc) => {
+    const lesson = doc.data();
+    const userTimezone = lesson.userTimezone || "UTC"; // Если нет, используем UTC
 
-      // Конвертируем дату в русский формат в часовом поясе ученика
-      const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long" };
-      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit" };
-      const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
-      const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
-      const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
+    // Конвертируем дату в русский формат в часовом поясе ученика
+    const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
+    const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false }; // часовой формат 24
+    const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
+    const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
+    const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
 
+    console.log(lessonTimeLocal, "user time zone",userTimezone ); // Это будет показывать правильное время в вашем формате
+});
       // Формируем email
       const subject = "Напоминание: Ваш урок скоро начнется";
       const status = lesson.paid ? "Оплачен" : "Не оплачен";
