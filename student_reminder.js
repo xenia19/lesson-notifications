@@ -27,7 +27,6 @@ async function sendStudentReminders() {
   try {
     // Выбираем уроки, где studentNotified == false, и начало урока находится между now и reminderThreshold
     const snapshot = await db.collection('lessons')
-      .where('studentNotified', '==', false)
       .where('start', '>=', now.toISOString())
       .where('start', '<=', reminderThreshold.toISOString())
       .get();
