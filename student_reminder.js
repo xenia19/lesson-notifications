@@ -23,7 +23,7 @@ async function sendStudentReminders() {
   // Напоминание отправляется за 60 минут до начала урока
   const reminderTimeMs = 25 * 60 * 1000;
   const reminderThreshold = new Date(now.getTime() + reminderTimeMs);
-
+  const userTimezone = lesson.userTimezone || "UTC";
   try {
     // Выбираем уроки, где studentNotified == false, и начало урока находится между now и reminderThreshold
     const snapshot = await db.collection('lessons')
