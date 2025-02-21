@@ -72,7 +72,7 @@ async function sendStudentReminders() {
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
       sendSmtpEmail.subject = subject;
       sendSmtpEmail.htmlContent = htmlContent;
-      sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Clases' };
+      sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Ksenia' };
       sendSmtpEmail.to = [{ email: lesson.userEmail, name: lesson.userName }];
 
       try {
