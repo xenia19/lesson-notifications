@@ -17,14 +17,6 @@ apiKey.apiKey = process.env.SIB_API_KEY;
 
 const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
-function getTimeZoneName(timeZone) {
-  const options = { timeZone, timeZoneName: 'long' };
-  const dateFormatter = new Intl.DateTimeFormat('ru-RU', options);
-  const parts = dateFormatter.formatToParts(new Date());
-  const timeZonePart = parts.find(part => part.type === 'timeZoneName');
-  return timeZonePart ? timeZonePart.value : 'Неизвестная зона';
-}
-const timeZoneName = getTimeZoneName(userTimezone);
 
 async function sendStudentReminders() {
   const now = new Date();
@@ -50,6 +42,15 @@ async function sendStudentReminders() {
     for (const doc of snapshot.docs) {
       const lesson = doc.data();
       const userTimezone = lesson.userTimezone || "UTC"; // Если нет, используем UTC
+      
+function getTimeZoneName(timeZone) {
+  const options = { timeZone, timeZoneName: 'long' };
+  const dateFormatter = new Intl.DateTimeFormat('ru-RU', options);
+  const parts = dateFormatter.formatToParts(new Date());
+  const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+  return timeZonePart ? timeZonePart.value : 'Неизвестная зона';
+}
+const timeZoneName = getTimeZoneName(userTimezone);
 
       // Конвертируем дату в русский формат в часовом поясе ученика
       const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
