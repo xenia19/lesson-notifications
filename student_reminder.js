@@ -19,15 +19,16 @@ const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 async function sendStudentReminders() {
   const now = new Date();
-  // Напоминание отправляется за 25 минут до начала урока
+  // Напоминание отправляется за 60 минут до начала урока
   const reminderTimeMs = 25 * 60 * 1000;
   const reminderThreshold = new Date(now.getTime() + reminderTimeMs);
 
   try {
-    // Выбираем уроки, где начало находится между now и reminderThreshold
+    // Выбираем уроки, где studentNotified == false, и начало урока находится между now и reminderThreshold
     const snapshot = await db.collection('lessons')
       .where('start', '>=', now.toISOString())
       .where('start', '<=', reminderThreshold.toISOString())
+      .where('studentNotified', '==', false)
       .get();
 
     if (snapshot.empty) {
@@ -37,10 +38,10 @@ async function sendStudentReminders() {
 
     const updatePromises = [];
 
-    // Обрабатываем найденные уроки
+    // Обходим найденные уроки
     for (const doc of snapshot.docs) {
       const lesson = doc.data();
-      const userTimezone = lesson.userTimezone || "UTC";
+      const userTimezone = lesson.userTimezone || "UTC"; // Теперь lesson объявлен перед использованием
 
       function getTimeZoneName(timeZone) {
         const options = { timeZone, timeZoneName: 'long' };
@@ -54,12 +55,12 @@ async function sendStudentReminders() {
 
       // Конвертируем дату в русский формат в часовом поясе ученика
       const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
-      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false };
+      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false }; // 24-часовой формат
       const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
       const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
       const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
 
-      console.log(lessonTimeLocal, "user time zone", userTimezone);
+      console.log(lessonTimeLocal, "user time zone", userTimezone); // Проверяем правильность времени
 
       // Формируем email
       const subject = "Напоминание: Ваш урок скоро начнется";
