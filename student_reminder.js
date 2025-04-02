@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const admin = require('firebase-admin'); 
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 // Инициализируем Firebase Admin через сервисный аккаунт (если ещё не инициализирован)
@@ -88,48 +88,41 @@ async function sendStudentReminders() {
 
 async function sendLowLessonReminder() {
   try {
-    const usersSnapshot = await db.collection('lessons')
-      .where('paid', '==', true)
-      .get();
+    const usersSnapshot = await db.collection('users').get();
+    const updatePromises = [];
 
-    const userLessons = {};
-
-    usersSnapshot.forEach(doc => {
-      const lesson = doc.data();
-      if (!userLessons[lesson.userEmail]) {
-        userLessons[lesson.userEmail] = { count: 0, lastReminderSent: lesson.lastReminderSent || null };
+    for (const userDoc of usersSnapshot.docs) {
+      const user = userDoc.data();
+      if (user.lowLessonReminderSent) {
+        continue; // Пропускаем, если уведомление уже отправлено
       }
-      userLessons[lesson.userEmail].count++;
-    });
 
-    for (const [email, data] of Object.entries(userLessons)) {
-      if (data.count === 1) {
-        const now = new Date();
-        if (data.lastReminderSent) {
-          const lastSentDate = new Date(data.lastReminderSent);
-          const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-          if (now - lastSentDate < oneWeekMs) {
-            continue;
-          }
-        }
+      const lessonsSnapshot = await db.collection('lessons')
+        .where('userEmail', '==', user.email)
+        .where('paid', '==', true)
+        .get();
 
+      if (lessonsSnapshot.size === 1) {
         const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
         sendSmtpEmail.subject = "Напоминание: Остался всего 1 урок";
         sendSmtpEmail.htmlContent = `<p>Hola!</p>
                                      <p>У вас остался <strong>1</strong> забронированный урок.</p>
                                      <p>Рекомендуем забронировать новые уроки заранее!</p>`;
         sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Ksenia' };
-        sendSmtpEmail.to = [{ email: email }];
+        sendSmtpEmail.to = [{ email: user.email }];
 
         try {
-          const data = await tranEmailApi.sendTransacEmail(sendSmtpEmail);
-          console.log(`Напоминание о низком количестве уроков отправлено для ${email}:`, data);
-          await db.collection('users').doc(email).update({ lastReminderSent: now.toISOString() });
+          await tranEmailApi.sendTransacEmail(sendSmtpEmail);
+          console.log(`Напоминание о низком количестве уроков отправлено для ${user.email}`);
+          updatePromises.push(db.collection('users').doc(userDoc.id).update({ lowLessonReminderSent: true }));
         } catch (error) {
-          console.error(`Ошибка отправки напоминания о низком количестве уроков для ${email}:`, error);
+          console.error(`Ошибка отправки напоминания о низком количестве уроков для ${user.email}:`, error);
         }
       }
     }
+
+    await Promise.all(updatePromises);
+    console.log('Все напоминания о низком количестве уроков обработаны');
   } catch (error) {
     console.error('Ошибка в sendLowLessonReminder:', error);
   }
