@@ -19,12 +19,10 @@ const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 async function sendStudentReminders() {
   const now = new Date();
-  // Напоминание отправляется за 60 минут до начала урока
   const reminderTimeMs = 60 * 60 * 1000;
   const reminderThreshold = new Date(now.getTime() + reminderTimeMs);
 
   try {
-    // Выбираем уроки, где studentNotified == false, и начало урока находится между now и reminderThreshold
     const snapshot = await db.collection('lessons')
       .where('start', '>=', now.toISOString())
       .where('start', '<=', reminderThreshold.toISOString())
@@ -38,10 +36,9 @@ async function sendStudentReminders() {
 
     const updatePromises = [];
 
-    // Обходим найденные уроки
     for (const doc of snapshot.docs) {
       const lesson = doc.data();
-      const userTimezone = lesson.userTimezone || "UTC"; // Теперь lesson объявлен перед использованием
+      const userTimezone = lesson.userTimezone || "UTC";
 
       function getTimeZoneName(timeZone) {
         const options = { timeZone, timeZoneName: 'long' };
@@ -53,16 +50,14 @@ async function sendStudentReminders() {
 
       const timeZoneName = getTimeZoneName(userTimezone);
 
-      // Конвертируем дату в русский формат в часовом поясе ученика
       const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
-      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false }; // 24-часовой формат
+      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false };
       const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
       const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
       const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
 
-      console.log(lessonTimeLocal, "user time zone", userTimezone); // Проверяем правильность времени
+      console.log(lessonTimeLocal, "user time zone", userTimezone);
 
-      // Формируем email
       const subject = "Напоминание: Ваш урок скоро начнется";
       const status = lesson.paid ? "Оплачен" : "Не оплачен";
       const htmlContent = `<p>Hola <strong>${lesson.userName}</strong>!</p>
@@ -91,4 +86,54 @@ async function sendStudentReminders() {
   }
 }
 
+async function sendLowLessonReminder() {
+  try {
+    const usersSnapshot = await db.collection('lessons')
+      .where('paid', '==', true)
+      .get();
+
+    const userLessons = {};
+
+    usersSnapshot.forEach(doc => {
+      const lesson = doc.data();
+      if (!userLessons[lesson.userEmail]) {
+        userLessons[lesson.userEmail] = { count: 0, lastReminderSent: lesson.lastReminderSent || null };
+      }
+      userLessons[lesson.userEmail].count++;
+    });
+
+    for (const [email, data] of Object.entries(userLessons)) {
+      if (data.count === 1) {
+        const now = new Date();
+        if (data.lastReminderSent) {
+          const lastSentDate = new Date(data.lastReminderSent);
+          const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+          if (now - lastSentDate < oneWeekMs) {
+            continue;
+          }
+        }
+
+        const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+        sendSmtpEmail.subject = "Напоминание: Остался всего 1 урок";
+        sendSmtpEmail.htmlContent = `<p>Hola!</p>
+                                     <p>У вас остался <strong>1</strong> забронированный урок.</p>
+                                     <p>Рекомендуем забронировать новые уроки заранее!</p>`;
+        sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Ksenia' };
+        sendSmtpEmail.to = [{ email: email }];
+
+        try {
+          const data = await tranEmailApi.sendTransacEmail(sendSmtpEmail);
+          console.log(`Напоминание о низком количестве уроков отправлено для ${email}:`, data);
+          await db.collection('users').doc(email).update({ lastReminderSent: now.toISOString() });
+        } catch (error) {
+          console.error(`Ошибка отправки напоминания о низком количестве уроков для ${email}:`, error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка в sendLowLessonReminder:', error);
+  }
+}
+
 sendStudentReminders();
+sendLowLessonReminder();
