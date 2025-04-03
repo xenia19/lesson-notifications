@@ -69,11 +69,11 @@ async function sendStudentReminders() {
       console.log(`У пользователя ${lesson.userEmail} осталось ${futureLessons.length} будущих уроков.`);
       
       const isLastLesson = futureLessons.length === 1;
-      const lastLessonText = isLastLesson ? '<p><strong>Это ваш последний забронированный урок!</strong> Не забудь забронировать новые уроки! ;)</p>' : '';
+      const lastLessonText = isLastLesson ? '<p><strong>Кстати, это последний забронированный урок.</strong> Не забудь забронировать новые уроки! ;)</p>' : '';
       
-      const subject = "Напоминание: Ваш урок скоро начнется";
+      const subject = "Напоминание: урок скоро начнется";
       const htmlContent = `<p>Hola <strong>${lesson.userName}</strong>!</p>
-                           <p>Напоминаем, что ваш урок начнется <strong>${lessonTimeLocal}</strong> (время - ${timeZoneName}).</p>
+                           <p>Урок начнется <strong>${lessonTimeLocal}</strong> (время - ${timeZoneName}).</p>
                            ${lastLessonText}`;
       
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
