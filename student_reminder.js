@@ -99,7 +99,6 @@ async function sendLowLessonReminder() {
       
       const lessonsSnapshot = await db.collection('lessons')
         .where('userEmail', '==', user.email)
-        .where('paid', '==', true)
         .get();
 
       if (lessonsSnapshot.size <= 1 && (!lastReminderSent || lastReminderSent < threeDaysAgo)) {
