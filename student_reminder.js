@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const admin = require('firebase-admin'); 
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 // Инициализируем Firebase Admin через сервисный аккаунт (если ещё не инициализирован)
@@ -19,12 +19,10 @@ const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 async function sendStudentReminders() {
   const now = new Date();
-  // Напоминание отправляется за 60 минут до начала урока
   const reminderTimeMs = 60 * 60 * 1000;
   const reminderThreshold = new Date(now.getTime() + reminderTimeMs);
 
   try {
-    // Выбираем уроки, где studentNotified == false, и начало урока находится между now и reminderThreshold
     const snapshot = await db.collection('lessons')
       .where('start', '>=', now.toISOString())
       .where('start', '<=', reminderThreshold.toISOString())
@@ -38,10 +36,9 @@ async function sendStudentReminders() {
 
     const updatePromises = [];
 
-    // Обходим найденные уроки
     for (const doc of snapshot.docs) {
       const lesson = doc.data();
-      const userTimezone = lesson.userTimezone || "UTC"; // Теперь lesson объявлен перед использованием
+      const userTimezone = lesson.userTimezone || "UTC";
 
       function getTimeZoneName(timeZone) {
         const options = { timeZone, timeZoneName: 'long' };
@@ -53,21 +50,19 @@ async function sendStudentReminders() {
 
       const timeZoneName = getTimeZoneName(userTimezone);
 
-      // Конвертируем дату в русский формат в часовом поясе ученика
       const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
-      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false }; // 24-часовой формат
+      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false };
       const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
       const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
-      const lessonTimeLocal = ${dateLocal} в ${timeLocal};
+      const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
 
-      console.log(lessonTimeLocal, "user time zone", userTimezone); // Проверяем правильность времени
+      console.log(lessonTimeLocal, "user time zone", userTimezone);
 
-      // Формируем email
       const subject = "Напоминание: Ваш урок скоро начнется";
       const status = lesson.paid ? "Оплачен" : "Не оплачен";
-      const htmlContent = <p>Hola <strong>${lesson.userName}</strong>!</p>
+      const htmlContent = `<p>Hola <strong>${lesson.userName}</strong>!</p>
                            <p>Напоминаем, что ваш урок начнется <strong>${lessonTimeLocal}</strong> (время - ${timeZoneName}).</p>
-                           <p>Статус оплаты: <strong>${status}</strong>.</p>;
+                           <p>Статус оплаты: <strong>${status}</strong>.</p>`;
       
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
       sendSmtpEmail.subject = subject;
@@ -77,10 +72,10 @@ async function sendStudentReminders() {
 
       try {
         const data = await tranEmailApi.sendTransacEmail(sendSmtpEmail);
-        console.log(Напоминание отправлено для ${lesson.userEmail}:, data);
+        console.log(`Напоминание отправлено для ${lesson.userEmail}:`, data);
         updatePromises.push(db.collection('lessons').doc(doc.id).update({ studentNotified: true }));
       } catch (error) {
-        console.error(Ошибка отправки напоминания для ${lesson.userEmail}:, error);
+        console.error(`Ошибка отправки напоминания для ${lesson.userEmail}:`, error);
       }
     }
 
@@ -91,4 +86,47 @@ async function sendStudentReminders() {
   }
 }
 
+async function sendLowLessonReminder() {
+  try {
+    const usersSnapshot = await db.collection('users').get();
+    const updatePromises = [];
+
+    for (const userDoc of usersSnapshot.docs) {
+      const user = userDoc.data();
+      if (user.lowLessonReminderSent) {
+        continue; // Пропускаем, если уведомление уже отправлено
+      }
+
+      const lessonsSnapshot = await db.collection('lessons')
+        .where('userEmail', '==', user.email)
+        .where('paid', '==', true)
+        .get();
+
+      if (lessonsSnapshot.size === 1) {
+        const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+        sendSmtpEmail.subject = "Напоминание: Остался всего 1 урок";
+        sendSmtpEmail.htmlContent = `<p>Hola!</p>
+                                     <p>У тебя остался <strong>1</strong> забронированный урок.</p>
+                                     <p>Не забудь забронировать новые уроки! ;)</p>`;
+        sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Ksenia' };
+        sendSmtpEmail.to = [{ email: user.email }];
+
+        try {
+          await tranEmailApi.sendTransacEmail(sendSmtpEmail);
+          console.log(`Напоминание о низком количестве уроков отправлено для ${user.email}`);
+          updatePromises.push(db.collection('users').doc(userDoc.id).update({ lowLessonReminderSent: true }));
+        } catch (error) {
+          console.error(`Ошибка отправки напоминания о низком количестве уроков для ${user.email}:`, error);
+        }
+      }
+    }
+
+    await Promise.all(updatePromises);
+    console.log('Все напоминания о низком количестве уроков обработаны');
+  } catch (error) {
+    console.error('Ошибка в sendLowLessonReminder:', error);
+  }
+}
+
 sendStudentReminders();
+sendLowLessonReminder();
