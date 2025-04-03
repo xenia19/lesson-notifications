@@ -90,23 +90,23 @@ async function sendLowLessonReminder() {
   try {
     const usersSnapshot = await db.collection('users').get();
     const updatePromises = [];
+    const now = new Date();
+    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
 
     for (const userDoc of usersSnapshot.docs) {
       const user = userDoc.data();
-      if (user.lowLessonReminderSent) {
-        continue; // Пропускаем, если уведомление уже отправлено
-      }
-
+      const lastReminderSent = user.lastLowLessonReminder ? new Date(user.lastLowLessonReminder) : null;
+      
       const lessonsSnapshot = await db.collection('lessons')
         .where('userEmail', '==', user.email)
         .where('paid', '==', true)
         .get();
 
-      if (lessonsSnapshot.size === 1) {
+      if (lessonsSnapshot.size <= 1 && (!lastReminderSent || lastReminderSent < threeDaysAgo)) {
         const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
         sendSmtpEmail.subject = "Напоминание: Остался всего 1 урок";
         sendSmtpEmail.htmlContent = `<p>Hola!</p>
-                                     <p>У тебя остался <strong>1</strong> забронированный урок.</p>
+                                     <p>У тебя осталось <strong>${lessonsSnapshot.size}</strong> забронированных уроков.</p>
                                      <p>Не забудь забронировать новые уроки! ;)</p>`;
         sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Ksenia' };
         sendSmtpEmail.to = [{ email: user.email }];
@@ -114,7 +114,7 @@ async function sendLowLessonReminder() {
         try {
           await tranEmailApi.sendTransacEmail(sendSmtpEmail);
           console.log(`Напоминание о низком количестве уроков отправлено для ${user.email}`);
-          updatePromises.push(db.collection('users').doc(userDoc.id).update({ lowLessonReminderSent: true }));
+          updatePromises.push(db.collection('users').doc(userDoc.id).update({ lastLowLessonReminder: now.toISOString() }));
         } catch (error) {
           console.error(`Ошибка отправки напоминания о низком количестве уроков для ${user.email}:`, error);
         }
