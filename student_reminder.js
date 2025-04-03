@@ -100,7 +100,7 @@ async function sendLowLessonReminder() {
       const lessonsSnapshot = await db.collection('lessons')
         .where('userEmail', '==', user.email)
         .get();
-
+ console.log(lessonsSnapshot, "snap", lastReminderSent);
       if (lessonsSnapshot.size <= 1 && (!lastReminderSent || lastReminderSent < threeDaysAgo)) {
         const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
         sendSmtpEmail.subject = "Напоминание: Остался всего 1 урок";
