@@ -1,7 +1,7 @@
-const admin = require('firebase-admin'); 
+const admin = require('firebase-admin');
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 
-// Инициализируем Firebase Admin через сервисный аккаунт (если ещё не инициализирован)
+// Инициализируем Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -17,116 +17,42 @@ apiKey.apiKey = process.env.SIB_API_KEY;
 
 const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
-async function sendStudentReminders() {
-  const now = new Date();
-  const reminderTimeMs = 60 * 60 * 1000;
-  const reminderThreshold = new Date(now.getTime() + reminderTimeMs);
-
-  try {
-    const snapshot = await db.collection('lessons')
-      .where('start', '>=', now.toISOString())
-      .where('start', '<=', reminderThreshold.toISOString())
-      .where('studentNotified', '==', false)
-      .get();
-
-    if (snapshot.empty) {
-      console.log('Нет уроков для уведомления учеников');
-      return;
-    }
-
-    const updatePromises = [];
-
-    for (const doc of snapshot.docs) {
-      const lesson = doc.data();
-      const userTimezone = lesson.userTimezone || "UTC";
-
-      function getTimeZoneName(timeZone) {
-        const options = { timeZone, timeZoneName: 'long' };
-        const dateFormatter = new Intl.DateTimeFormat('ru-RU', options);
-        const parts = dateFormatter.formatToParts(new Date());
-        const timeZonePart = parts.find(part => part.type === 'timeZoneName');
-        return timeZonePart ? timeZonePart.value : 'Неизвестная зона';
-      }
-
-      const timeZoneName = getTimeZoneName(userTimezone);
-
-      const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
-      const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false };
-      const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
-      const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
-      const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
-
-      console.log(lessonTimeLocal, "user time zone", userTimezone);
-
-      const subject = "Напоминание: Ваш урок скоро начнется";
-      const status = lesson.paid ? "Оплачен" : "Не оплачен";
-      const htmlContent = `<p>Hola <strong>${lesson.userName}</strong>!</p>
-                           <p>Напоминаем, что ваш урок начнется <strong>${lessonTimeLocal}</strong> (время - ${timeZoneName}).</p>
-                           <p>Статус оплаты: <strong>${status}</strong>.</p>`;
-      
-      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-      sendSmtpEmail.subject = subject;
-      sendSmtpEmail.htmlContent = htmlContent;
-      sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Ksenia' };
-      sendSmtpEmail.to = [{ email: lesson.userEmail, name: lesson.userName }];
-
-      try {
-        const data = await tranEmailApi.sendTransacEmail(sendSmtpEmail);
-        console.log(`Напоминание отправлено для ${lesson.userEmail}:`, data);
-        updatePromises.push(db.collection('lessons').doc(doc.id).update({ studentNotified: true }));
-      } catch (error) {
-        console.error(`Ошибка отправки напоминания для ${lesson.userEmail}:`, error);
-      }
-    }
-
-    await Promise.all(updatePromises);
-    console.log('Все уведомления ученикам обработаны');
-  } catch (error) {
-    console.error('Ошибка в sendStudentReminders:', error);
-  }
-}
-
 async function sendLowLessonReminder() {
   try {
-    const usersSnapshot = await db.collection('users').get();
-    const updatePromises = [];
+    const snapshot = await db.collection('lessons').get();
+    const lessonsByUser = {};
 
-    for (const userDoc of usersSnapshot.docs) {
-      const user = userDoc.data();
-      if (user.lowLessonReminderSent) {
-        continue; // Пропускаем, если уведомление уже отправлено
+    snapshot.forEach(doc => {
+      const lesson = doc.data();
+      if (!lessonsByUser[lesson.userEmail]) {
+        lessonsByUser[lesson.userEmail] = { count: 0, notified: false };
       }
+      lessonsByUser[lesson.userEmail].count++;
+    });
 
-      const lessonsSnapshot = await db.collection('lessons')
-        .where('userEmail', '==', user.email)
-        .where('paid', '==', true)
-        .get();
-
-      if (lessonsSnapshot.size === 1) {
+    const updatePromises = [];
+    for (const [userEmail, data] of Object.entries(lessonsByUser)) {
+      if (data.count <= 1 && !data.notified) {
         const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-        sendSmtpEmail.subject = "Напоминание: Остался всего 1 урок";
-        sendSmtpEmail.htmlContent = `<p>Hola!</p>
-                                     <p>У вас остался <strong>1</strong> забронированный урок.</p>
-                                     <p>Рекомендуем забронировать новые уроки заранее!</p>`;
+        sendSmtpEmail.subject = "Español";
+        sendSmtpEmail.htmlContent = `<p>Hola!</p><p>У вас остался всего ${data.count} урок. Пожалуйста, запишитесь на новые занятия!</p>`;
         sendSmtpEmail.sender = { email: 'info@clases-con-xenia.online', name: 'Ksenia' };
-        sendSmtpEmail.to = [{ email: user.email }];
+        sendSmtpEmail.to = [{ email: userEmail }];
 
         try {
           await tranEmailApi.sendTransacEmail(sendSmtpEmail);
-          console.log(`Напоминание о низком количестве уроков отправлено для ${user.email}`);
-          updatePromises.push(db.collection('users').doc(userDoc.id).update({ lowLessonReminderSent: true }));
+          console.log(`Уведомление о низком количестве уроков отправлено для ${userEmail}`);
+          updatePromises.push(db.collection('lessons').doc(userEmail).update({ lowLessonNotified: true }));
         } catch (error) {
-          console.error(`Ошибка отправки напоминания о низком количестве уроков для ${user.email}:`, error);
+          console.error(`Ошибка отправки уведомления для ${userEmail}:`, error);
         }
       }
     }
-
     await Promise.all(updatePromises);
-    console.log('Все напоминания о низком количестве уроков обработаны');
+    console.log('Обработаны все уведомления о низком количестве уроков');
   } catch (error) {
     console.error('Ошибка в sendLowLessonReminder:', error);
   }
 }
 
-sendStudentReminders();
 sendLowLessonReminder();
