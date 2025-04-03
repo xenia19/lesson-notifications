@@ -58,21 +58,20 @@ async function sendStudentReminders() {
 
       console.log(lessonTimeLocal, "user time zone", userTimezone);
 
-      // Проверяем количество оставшихся уроков
-      const lessonsSnapshot = await db.collection('lessons')
+      // Проверяем количество оставшихся будущих уроков
+      const futureLessonsSnapshot = await db.collection('lessons')
         .where('userEmail', '==', lesson.userEmail)
+        .where('start', '>=', now.toISOString()) // Только будущие уроки
         .get();
 
-      console.log(`У пользователя ${lesson.userEmail} осталось ${lessonsSnapshot.size} оплаченных уроков., `, lessonsSnapshot);
+      console.log(`У пользователя ${lesson.userEmail} осталось ${futureLessonsSnapshot.size} будущих уроков.`);
       
-      const isLastLesson = lessonsSnapshot.size === 1;
+      const isLastLesson = futureLessonsSnapshot.size === 1;
       const lastLessonText = isLastLesson ? '<p><strong>Это ваш последний забронированный урок!</strong> Не забудь забронировать новые уроки! ;)</p>' : '';
       
       const subject = "Напоминание: Ваш урок скоро начнется";
-      const status = lesson.paid ? "Оплачен" : "Не оплачен";
       const htmlContent = `<p>Hola <strong>${lesson.userName}</strong>!</p>
                            <p>Напоминаем, что ваш урок начнется <strong>${lessonTimeLocal}</strong> (время - ${timeZoneName}).</p>
-                           <p>Статус оплаты: <strong>${status}</strong>.</p>
                            ${lastLessonText}`;
       
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
