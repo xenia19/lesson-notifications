@@ -24,8 +24,6 @@ async function sendStudentReminders() {
 
   try {
     const snapshot = await db.collection('lessons')
-      .where('start', '>=', now.toISOString())
-      .where('start', '<=', reminderThreshold.toISOString())
       .where('studentNotified', '==', false)
       .get();
 
@@ -38,6 +36,9 @@ async function sendStudentReminders() {
 
     for (const doc of snapshot.docs) {
       const lesson = doc.data();
+      const lessonStart = new Date(lesson.start);
+      if (lessonStart < now || lessonStart > reminderThreshold) continue;
+      
       const userTimezone = lesson.userTimezone || "UTC";
 
       function getTimeZoneName(timeZone) {
@@ -52,21 +53,22 @@ async function sendStudentReminders() {
 
       const dateOptions = { timeZone: userTimezone, day: "numeric", month: "long", year: "numeric" };
       const timeOptions = { timeZone: userTimezone, hour: "2-digit", minute: "2-digit", hour12: false };
-      const dateLocal = new Date(lesson.start).toLocaleDateString("ru-RU", dateOptions);
-      const timeLocal = new Date(lesson.start).toLocaleTimeString("ru-RU", timeOptions);
+      const dateLocal = lessonStart.toLocaleDateString("ru-RU", dateOptions);
+      const timeLocal = lessonStart.toLocaleTimeString("ru-RU", timeOptions);
       const lessonTimeLocal = `${dateLocal} в ${timeLocal}`;
 
       console.log(lessonTimeLocal, "user time zone", userTimezone);
 
-      // Проверяем количество оставшихся будущих уроков
-      const futureLessonsSnapshot = await db.collection('lessons')
+      // Получаем все уроки пользователя
+      const allLessonsSnapshot = await db.collection('lessons')
         .where('userEmail', '==', lesson.userEmail)
-        .where('start', '>=', now.toISOString()) // Только будущие уроки
         .get();
-
-      console.log(`У пользователя ${lesson.userEmail} осталось ${futureLessonsSnapshot.size} будущих уроков.`);
       
-      const isLastLesson = futureLessonsSnapshot.size === 1;
+      // Фильтруем только будущие уроки
+      const futureLessons = allLessonsSnapshot.docs.map(d => d.data()).filter(l => new Date(l.start) > now);
+      console.log(`У пользователя ${lesson.userEmail} осталось ${futureLessons.length} будущих уроков.`);
+      
+      const isLastLesson = futureLessons.length === 1;
       const lastLessonText = isLastLesson ? '<p><strong>Это ваш последний забронированный урок!</strong> Не забудь забронировать новые уроки! ;)</p>' : '';
       
       const subject = "Напоминание: Ваш урок скоро начнется";
