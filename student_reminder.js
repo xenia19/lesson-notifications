@@ -61,10 +61,9 @@ async function sendStudentReminders() {
       // Проверяем количество оставшихся уроков
       const lessonsSnapshot = await db.collection('lessons')
         .where('userEmail', '==', lesson.userEmail)
-        .where('paid', '==', true)
         .get();
 
-      console.log(`У пользователя ${lesson.userEmail} осталось ${lessonsSnapshot.size} оплаченных уроков.`);
+      console.log(`У пользователя ${lesson.userEmail} осталось ${lessonsSnapshot.size} оплаченных уроков., `, lessonsSnapshot);
       
       const isLastLesson = lessonsSnapshot.size === 1;
       const lastLessonText = isLastLesson ? '<p><strong>Это ваш последний забронированный урок!</strong> Не забудь забронировать новые уроки! ;)</p>' : '';
